@@ -10,9 +10,18 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // --- CORS ---
+const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map(o => o.trim());
+
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+  origin(origin, cb) {
+    // Allow requests with no origin (curl, server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error(`Origin ${origin} not allowed by CORS`));
+  },
   methods: ['GET', 'POST'],
+  credentials: true,
 }));
 
 // --- Body parsing (10kb limit) ---

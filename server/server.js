@@ -12,12 +12,19 @@ const PORT = process.env.PORT || 3001;
 // --- CORS ---
 const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
   .split(',')
-  .map(o => o.trim());
+  .map(o => o.trim().replace(/\/+$/, '')); // strip trailing slashes
+
+// Vercel preview pattern: matches any deployment hash under your project
+const vercelPattern = process.env.VERCEL_PROJECT_PATTERN
+  ? new RegExp(process.env.VERCEL_PROJECT_PATTERN)
+  : null;
 
 app.use(cors({
   origin(origin, cb) {
-    // Allow requests with no origin (curl, server-to-server)
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    if (!origin) return cb(null, true);
+    const clean = origin.replace(/\/+$/, '');
+    if (allowedOrigins.includes(clean)) return cb(null, true);
+    if (vercelPattern && vercelPattern.test(clean)) return cb(null, true);
     cb(new Error(`Origin ${origin} not allowed by CORS`));
   },
   methods: ['GET', 'POST'],
